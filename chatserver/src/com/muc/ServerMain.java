@@ -12,20 +12,11 @@ public class ServerMain {
         try {
             ServerSocket serverSocket = new ServerSocket(port);
             while (true) {
+                System.out.println("About to accept client connection...");
                 Socket clientSocket = serverSocket.accept();
-                Thread t = new Thread( ) {
-                    public void run() {
-                        try {
-                            handleClientSocket(clientSocket);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                };
-                t.start();
-
+                System.out.println("Accepted connection from" + clientSocket);
+                ServerWorker worker = new ServerWorker(clientSocket);
+                worker.start();
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -33,12 +24,4 @@ public class ServerMain {
 
     }
 
-    private static void handleClientSocket(Socket clientSocket) throws IOException, InterruptedException {
-        OutputStream outputStream = clientSocket.getOutputStream();
-        for (int i=0; i<10; i++) {
-            outputStream.write(("Time now is " + new Date() + "\n").getBytes());
-            Thread.sleep(1000);
-        }
-        clientSocket.close();
-    }
 }
