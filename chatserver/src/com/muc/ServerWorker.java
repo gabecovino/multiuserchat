@@ -4,15 +4,17 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.HashSet;
 import java.util.List;
 
 
-public class ServerWorker extends Thread{
+public class ServerWorker<topic> extends Thread{
 
     private final Socket clientSocket;
     private String login = null;
     private final Server server;
     private OutputStream outputStream;
+    private HashSet<String> topicSet = new HashSet<>();
 
     public ServerWorker(Server server, Socket clientSocket) {
         this.clientSocket = clientSocket;
@@ -45,11 +47,17 @@ public class ServerWorker extends Thread{
             String[] tokens = StringUtils.split(line);
             if (tokens != null && tokens.length > 0){
                 String cmd = tokens[0];
-                if ( "logout".equalsIgnoreCase(cmd) || "quit".equalsIgnoreCase(cmd)) {
+                if ( "logoff".equalsIgnoreCase(cmd) || "quit".equalsIgnoreCase(cmd)) {
                     handleLogOff();
                     break;
                 } else if ("login".equalsIgnoreCase(cmd)) {
                     handleLogin(outputStream, tokens);
+                } else if ("msg".equalsIgnoreCase(cmd)) {
+                    handleMessage(tokens);
+                } else if ("join".equalsIgnoreCase(cmd)) {
+                    handleJoin(tokens);
+                } else if ("leave".equalsIgnoreCase(cmd)) {
+                    handleLeave(tokens);
                 } else {
                     String msg = "unknown: " + cmd + "\n";
                     outputStream.write(msg.getBytes());
@@ -60,7 +68,46 @@ public class ServerWorker extends Thread{
         clientSocket.close();
     }
 
+    private void handleLeave(String[] tokens) {
+    }
+
+    public boolean isMemberOfTopic(String topic) {
+            return topicSet.contains(topic);
+    }
+
+    private void handleJoin(String[] tokens) {
+
+    }
+
+    private void handleMessage(String[] tokens) throws IOException {
+        String sendTo = tokens[1];
+        String body = "";
+
+        boolean isTopic = sendTo.charAt(0) == '#';
+
+        for (int i = 2; i < tokens.length; i ++) {
+            body = body + tokens[i] + " ";
+        }
+
+        List<ServerWorker> workerList = server.getWorkerList();
+        for(ServerWorker worker : workerList) {
+            if (isTopic) {
+                if (worker.isMemberOfTopic(sendTo)) {
+                    String outMsg = "message to: " + sendTo + "- message from: " + login + " - " + body + "\n";
+                    worker.send(outMsg);
+                }
+            } else {
+                if (sendTo.equalsIgnoreCase(worker.getLogin())) {
+                    String outMsg = "message from: " + login + " - " + body + "\n";
+                    worker.send(outMsg);
+                }
+            }
+        }
+
+    }
+
     private void handleLogOff() throws IOException {
+        server.removeWorker(this);
         List<ServerWorker> workerList = server.getWorkerList();
 
         String onlineMsg = "logout: " + login + "\n";
@@ -81,7 +128,7 @@ public class ServerWorker extends Thread{
             String login = tokens[1];
             String password = tokens[2];
 
-            if ((login.equals("guest") && password.equals("guest")) || (login.equals("jim") && password.equals("jim")) ) {
+            if ((login.equals("guest") && password.equals("guest")) || (login.equals("jim") && password.equals("jim")) || (login.equals("juan") && password.equals("juan"))) {
                 String msg = "ok login\n";
                 outputStream.write(msg.getBytes());
                 this.login = login;
@@ -103,12 +150,13 @@ public class ServerWorker extends Thread{
                      }
                 }
 
-            } else if (login.equals("guest") || login.equals("jim")) {
+            } else if (List.of("guest", "jim", "juan").contains(login)) {
                 String msg = "wrong password\n";
                 outputStream.write(msg.getBytes());
             } else {
                 String msg = "error login\n";
                 outputStream.write(msg.getBytes());
+                System.err.println("Login failed for " + login);
             }
         }
     }
