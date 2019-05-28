@@ -2,10 +2,7 @@ package com.muc;
 
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.LineNumberReader;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
 
@@ -26,13 +23,34 @@ public class ChatClient {
     public static void Main (String[] args) throws IOException {
         ChatClient client = new ChatClient("localhost", 8818);
         client.addUserStatusListener(new UserStatusListener() {
+            @Override
             public void online(String login) {
                 System.out.println("ONLINE: " + login);
             }
+            @Override
             public void offline(String login) {
                 System.out.println("OFFLINE: " + login);
             }
         });
+        client.addMessageListener(new MessageListener() {
+
+            @Override
+            public void onMessage(String fromLogin, String msgBody) {
+                System.out.println("you got a message from " + fromLogin + "=========>" + msgBody);
+            }
+
+            @Override
+            public void add(MessageListener messageListener) {
+                
+            }
+
+            @Override
+            public void remove(MessageListener messageListener) {
+
+            }
+        });
+
+
         if (!client.connect()) {
             System.err.println("Connection Failed");
         } else {
@@ -47,7 +65,8 @@ public class ChatClient {
         }
     }
 
-    private boolean login(String username, String password) throws IOException {
+
+    public boolean login(String username, String password) throws IOException {
         String cmd = "login " + username + " " + password;
         serverOut.write(cmd.getBytes());
 
@@ -111,7 +130,7 @@ public class ChatClient {
         }
     }
 
-    private boolean connect() {
+    public boolean connect() {
         try {
             this.socket = new Socket(serverName,serverPort);
             System.out.println("Client port is " + socket.getLocalPort());
@@ -129,5 +148,18 @@ public class ChatClient {
     }
     public void removeUserStatusListener(UserStatusListener listener) {
         userStatusListeners.remove(listener);
+    }
+
+
+    public void addMessageListener(MessageListener messageListener) {
+        messageListener.add(messageListener);
+    }
+    public void removeMessageListener(MessageListener messageListener) {
+        messageListener.remove(messageListener);
+    }
+
+    public void message(String login, String text) {
+        String cmd = "msg: " + login + " " + text;
+
     }
 }

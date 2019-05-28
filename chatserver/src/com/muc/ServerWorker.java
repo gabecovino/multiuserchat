@@ -69,6 +69,10 @@ public class ServerWorker<topic> extends Thread{
     }
 
     private void handleLeave(String[] tokens) {
+        if (tokens.length > 1) {
+            String topic = tokens[1];
+            topicSet.remove(topic);
+        }
     }
 
     public boolean isMemberOfTopic(String topic) {
@@ -76,6 +80,10 @@ public class ServerWorker<topic> extends Thread{
     }
 
     private void handleJoin(String[] tokens) {
+        if (tokens.length > 1) {
+            String topic = tokens[1];
+            topicSet.add(topic);
+        }
 
     }
 
